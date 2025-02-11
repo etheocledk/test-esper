@@ -284,65 +284,58 @@ class AdminController extends Controller
     //     ], 400);
     // }
 
-public function updateAvatar(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'avatar' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-    ], [
-        'avatar.required' => 'L\'avatar est requis.',
-        'avatar.image' => 'Le fichier doit être une image.',
-        'avatar.mimes' => 'L\'image doit être au format JPEG, PNG ou JPG.',
-        'avatar.max' => 'L\'image ne doit pas dépasser 2 Mo.',
-    ]);
+    public function updateAvatar(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'avatar' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ], [
+            'avatar.required' => 'L\'avatar est requis.',
+            'avatar.image' => 'Le fichier doit être une image.',
+            'avatar.mimes' => 'L\'image doit être au format JPEG, PNG ou JPG.',
+            'avatar.max' => 'L\'image ne doit pas dépasser 2 Mo.',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json([
-            'success' => false,
-            'message' => $validator->errors()->first(),
-        ], 422);
-    }
-
-    $admin = Auth::user();
-    if (!$admin) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Utilisateur non authentifié.',
-        ], 401);
-    }
-
-    if ($request->hasFile('avatar')) {
-        // Supprimer l'ancien avatar s'il existe
-        if ($admin->avatar && Storage::exists('public/' . $admin->avatar)) {
-            Storage::delete('public/' . $admin->avatar);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
         }
 
-        // Générer un nom unique pour le fichier
-        $filename = 'avatar_' . time() . '.' . $request->file('avatar')->extension();
-        $path = storage_path('app/public/avatars/' . $filename);
+        $admin = Auth::user();
+        if (!$admin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié.',
+            ], 401);
+        }
 
-        // Redimensionner et optimiser l'image
-        $image = Image::make($request->file('avatar'))
-            ->fit(300, 300) // Redimensionner à 300x300 px
-            ->encode(null, 80); // Compression de l'image à 80% de qualité
+        if ($request->hasFile('avatar')) {
+            // Supprimer l'ancien avatar s'il existe
+            if ($admin->avatar) {
+                deleteFile($admin->avatar);
+            }
 
-        // Stocker l'image dans le dossier public/avatars
-        Storage::put('public/avatars/' . $filename, $image->stream());
+            $img = $request->file('avatar');
+            $folderName = "admin-avatar";
+            $uploadFolder = 'uploads/img/avatar/';
+            folderOpen($uploadFolder);
+            $imgUrl = uploadImage($img, $folderName, $uploadFolder);
 
-        // Enregistrer le chemin de l'avatar dans la base de données
-        $admin->avatar = 'avatars/' . $filename;
-        $admin->save();
+            // Enregistrer le chemin de l'avatar dans la base de données
+            $admin->avatar = $imgUrl;
+            $admin->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Avatar mis à jour avec succès.',
+                'avatar' => asset($admin->avatar),
+            ]);
+        }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Avatar mis à jour avec succès.',
-            'avatar' => asset('storage/' . $admin->avatar),
-        ]);
+            'success' => false,
+            'message' => 'Aucun fichier téléchargé.',
+        ], 400);
     }
-
-    return response()->json([
-        'success' => false,
-        'message' => 'Aucun fichier téléchargé.',
-    ], 400);
-}
-
 }
