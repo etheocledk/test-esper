@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y \
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Copy .env file 
-COPY .env .env
+COPY .env.dev .env
 
 # Copy application files and set correct permissions
 COPY --chown=www-data:www-data . .
