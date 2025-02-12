@@ -102,8 +102,14 @@ class CompanyController extends Controller
 
         $logoPath = null;
         if ($request->hasFile('logo')) {
-            $logo = $request->file('logo');
-            $logoPath = $logo->store('logos', 'public');
+
+            $img = $request->file('logo');
+            $folderName = $request->name;
+            $uploadFolder = 'uploads/img/companies/';
+            folderOpen($uploadFolder);
+            $imgUrl = uploadImage($img, $folderName, $uploadFolder);
+
+            $logoPath = asset($imgUrl);
         }
 
         $company = Company::create([
@@ -111,7 +117,7 @@ class CompanyController extends Controller
             'email' => $request->email,
             'abonnement' => $request->abonnement,
             'amount' => floatval($request->amount),
-            'logo' => $logoPath ? asset('storage/' . $logoPath) : null,
+            'logo' => $logoPath ? $logoPath : null,
             'password' => Hash::make($password),
         ]);
 
@@ -169,15 +175,21 @@ class CompanyController extends Controller
         $company = Company::findOrFail($id);
 
         if ($request->hasFile('logo')) {
-            if ($company->logo && Storage::exists('public/' . $company->logo)) {
-                Storage::delete('public/' . $company->logo);
+            if ($company->logo) {
+                $relativePath = str_replace(asset('/'), '', $company->logo);
+                deleteFile(public_path($relativePath));
             }
 
-            $logo = $request->file('logo');
-            $logoPath = $logo->store('logos', 'public');
+            $img = $request->file('logo');
+            $folderName = $company->name;
+            $uploadFolder = 'uploads/img/companies/';
+            folderOpen($uploadFolder);
+            $imgUrl = uploadImage($img, $folderName, $uploadFolder);
+
+            $logoPath = asset($imgUrl);
 
             $company->update([
-                'logo' => asset('storage/' . $logoPath) ?? $company->logo
+                'logo' => $logoPath ?? $company->logo
             ]);
         }
 
@@ -199,6 +211,12 @@ class CompanyController extends Controller
     {
         try {
             $company = Company::findOrFail($id);
+
+            if ($company->logo) {
+                $relativePath = str_replace(asset('/'), '', $company->logo);
+                deleteFile(public_path($relativePath));
+            }
+
             $company->delete();
 
             return response()->json([

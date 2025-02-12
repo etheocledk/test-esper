@@ -12,20 +12,22 @@ if (!function_exists('folderOpen')) {
 }
 
 if (!function_exists('uploadImage')) {
-    function uploadImage($img, $name, $path)
+    function uploadImage($file, $name, $path)
     {
-        $extension = $img->getClientOriginalExtension();
+        // Assurer que le chemin a un "/" à la fin
+        $path = rtrim($path, '/') . '/';
 
-        //$folderName = time() . '-' . Str::slug($name);
+        // Récupérer l'extension et le MIME type
+        $extension = strtolower($file->getClientOriginalExtension());
+        $mimeType = $file->getMimeType();
 
-        $uniqueName = time() . '-' . uniqid() . '-' . Str::slug($name);
+        // Générer un nom de fichier unique
+        $uniqueName = time() . '-' . uniqid() . '-' . Str::slug($name) . '.' . $extension;
 
-        if (in_array($extension, ['pdf', 'svg', 'webp', 'jiff'])) { // Process based on file extension
-            $img->move(public_path($path), $uniqueName . '.' . $extension);
+        if (str_starts_with($mimeType, 'image/')) { // Process based on file extension
+            folderOpen($path);
 
-            $imgurl = $path . $uniqueName . '.' . $extension;
-        } else {
-            $img = Image::make($img);
+            $img = Image::make($file);
 
             $img->resize(640, 735, function ($constraint) {
                 $constraint->aspectRatio();
@@ -35,8 +37,21 @@ if (!function_exists('uploadImage')) {
             $img->encode('webp', 75)->save($path . $uniqueName . '.webp');
 
             $imgurl = $path . $uniqueName . '.webp';
+            return $imgurl;
+        } elseif (str_starts_with($mimeType, 'video/')) {
+            folderOpen($path);
+
+            $file->move(public_path($path), $uniqueName);
+            return $path . $uniqueName;
+        } elseif (in_array($extension, ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv'])) {
+
+            folderOpen($path);
+
+            $file->move(public_path($path), $uniqueName);
+            return $path . $uniqueName;
         }
-        return $imgurl;
+
+        return null;
     }
 }
 

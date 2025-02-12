@@ -72,8 +72,9 @@ class FaqController extends Controller
             ], 404);
         }
 
-        if ($faq->icone && Storage::exists('public/' . $faq->icone)) {
-            Storage::delete('public/' . $faq->icone);
+        if ($faq->icone) {
+            $relativePath = str_replace(asset('/'), '', $faq->icone);
+            deleteFile(public_path($relativePath));
         }
 
         $faq->delete();
@@ -113,8 +114,12 @@ class FaqController extends Controller
         $faq->categorie = $request->categorie;
 
         if ($request->hasFile('icone')) {
-            $iconPath = $request->file('icone')->store('icons', 'public');
-            $faq->icone = asset('storage/' . $iconPath);
+            $img = $request->file('icone');
+            $folderName = $faq->titre;
+            $uploadFolder = 'uploads/img/faqs/';
+            folderOpen($uploadFolder);
+            $imgUrl = uploadImage($img, $folderName, $uploadFolder);
+            $faq->icone = asset($imgUrl);
         }
 
         $faq->save();
@@ -163,12 +168,19 @@ class FaqController extends Controller
         $faq->categorie = $request->categorie;
 
         if ($request->hasFile('icone')) {
-            if ($faq->icone && Storage::exists('public/' . $faq->icone)) {
-                Storage::delete('public/' . $faq->icone);
+
+            if ($faq->icone) {
+                $relativePath = str_replace(asset('/'), '', $faq->icone);
+                deleteFile(public_path($relativePath));
             }
 
-            $iconPath = $request->file('icone')->store('icons', 'public');
-            $faq->icone = asset('storage/' . $iconPath);
+            $img = $request->file('icone');
+            $folderName = $faq->titre;
+            $uploadFolder = 'uploads/img/faqs/';
+            folderOpen($uploadFolder);
+            $imgUrl = uploadImage($img, $folderName, $uploadFolder);
+
+            $faq->icone = asset($imgUrl);
         }
 
         $faq->save();

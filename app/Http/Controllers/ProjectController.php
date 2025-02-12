@@ -61,13 +61,27 @@ class ProjectController extends Controller
         }
 
         if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('images', 'public');
+
+            $img = $request->file('image');
+            $folderName = $request->title;
+            $uploadFolder = 'uploads/img/projects/';
+            folderOpen($uploadFolder);
+            $imgUrl = uploadImage($img, $folderName, $uploadFolder);
+
+            $imagePath = asset($imgUrl);
         } else {
             $imagePath = null;
         }
 
         if ($request->hasFile('video')) {
-            $videoPath = $request->file('video')->store('videos', 'public');
+
+            $video = $request->file('video');
+            $folderName = $request->title;
+            $uploadFolder = 'uploads/video/projects/';
+            folderOpen($uploadFolder);
+            $videoUrl = uploadImage($video, $folderName, $uploadFolder);
+
+            $videoPath = asset($videoUrl);
         } else {
             $videoPath = null;
         }
@@ -80,8 +94,8 @@ class ProjectController extends Controller
             'events_offered' => $request->events_offered,
             'iban' => $request->iban,
             'description' => $request->description,
-            'image' => $imagePath ? asset('storage/' . $imagePath) : null,
-            'video' => $videoPath ? asset('storage/' . $videoPath) : null,
+            'image' => $imagePath ? $imagePath : null,
+            'video' => $videoPath ? $videoPath : null,
         ]);
 
         return response()->json([
@@ -144,17 +158,33 @@ class ProjectController extends Controller
         $imagePath = null;
         if ($request->hasFile('image')) {
             if ($project->image) {
-                Storage::delete($project->image);
+                $relativePath = str_replace(asset('/'), '', $project->image);
+                deleteFile(public_path($relativePath));
             }
-            $imagePath = $request->file('image')->store('images', 'public');
+
+            $img = $request->file('image');
+            $folderName = $project->title;
+            $uploadFolder = 'uploads/img/projects/';
+            folderOpen($uploadFolder);
+            $imgUrl = uploadImage($img, $folderName, $uploadFolder);
+
+            $imagePath = asset($imgUrl);
         }
 
         $videoPath = null;
         if ($request->hasFile('video')) {
             if ($project->video) {
-                Storage::delete($project->video);
+                $relativePath = str_replace(asset('/'), '', $project->video);
+                deleteFile(public_path($relativePath));
             }
-            $videoPath = $request->file('video')->store('videos', 'public');
+
+            $video = $request->file('video');
+            $folderName = $project->title;
+            $uploadFolder = 'uploads/video/projects/';
+            folderOpen($uploadFolder);
+            $videoUrl = uploadImage($video, $folderName, $uploadFolder);
+
+            $videoPath = asset($videoUrl);
         }
 
         $project->update([
@@ -165,8 +195,8 @@ class ProjectController extends Controller
             'events_offered' => $request->events_offered,
             'iban' => $request->iban,
             'description' => $request->description,
-            'image' => $imagePath ? asset('storage/' . $imagePath) : $project->image,
-            'video' => $videoPath ? asset('storage/' . $videoPath) : $project->video,
+            'image' => $imagePath ? $imagePath : $project->image,
+            'video' => $videoPath ? $videoPath : $project->video,
         ]);
 
         return response()->json([
@@ -187,8 +217,14 @@ class ProjectController extends Controller
             ], 404);
         }
 
-        if ($project->image && Storage::exists($project->image)) {
-            Storage::delete($project->image);
+        if ($project->image) {
+            $relativePath = str_replace(asset('/'), '', $project->image);
+            deleteFile(public_path($relativePath));
+        }
+
+        if ($project->video) {
+            $relativePath = str_replace(asset('/'), '', $project->video);
+            deleteFile(public_path($relativePath));
         }
 
         $project->delete();

@@ -313,7 +313,8 @@ class AdminController extends Controller
         if ($request->hasFile('avatar')) {
             // Supprimer l'ancien avatar s'il existe
             if ($admin->avatar) {
-                deleteFile($admin->avatar);
+                $relativePath = str_replace(asset('/'), '', $admin->avatar);
+                deleteFile(public_path($relativePath));
             }
 
             $img = $request->file('avatar');
@@ -323,7 +324,7 @@ class AdminController extends Controller
             $imgUrl = uploadImage($img, $folderName, $uploadFolder);
 
             // Enregistrer le chemin de l'avatar dans la base de données
-            $admin->avatar = $imgUrl;
+            $admin->avatar = asset($imgUrl);
             $admin->save();
 
             return response()->json([
